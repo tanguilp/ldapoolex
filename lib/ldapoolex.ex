@@ -70,22 +70,28 @@ defmodule LDAPoolex do
     end)
   end
 
-  def child_spec(pool_name, opts) do
+  def child_spec(opts) do
     args = [
-      name: opts[:name] || {:local, pool_name},
+      name: case opts[:name] do
+        {_, _} -> # already in Supervisor format
+          opts[:name]
+
+        _ ->
+          {:local, opts[:name]}
+      end,
       worker_module: LDAPoolex.ConnectionWorker,
       size: opts[:size] || 5,
       max_overflow: opts[:max_overflow] || 5
     ]
 
-    :poolboy.child_spec(pool_name, args, opts[:ldap_args])
+    :poolboy.child_spec(opts[:name], args, opts[:ldap_args])
   end
 
   @doc """
   Launches a supervised LDAP pool
 
   Options:
-  - `:name`: the name of the pool (from poolboy). Defaults to `{:local, pool_name}`
+  - `:name`: the name of the pool (from poolboy). Defaults to `{:local, name}`
   - `:size`: the initial size of the pool (from poolboy). Defaults to `5`
   - `:max_overflow`: the number of *additional* LDAP connections that can be created under
   heavy load. Defaults to `5`, which means that by default the maximum number of connections
@@ -93,6 +99,9 @@ defmodule LDAPoolex do
   - `:ldap_args`:
     - `:hosts`: the host list under. Note that this latter option must be a **list** of
     **charlists** (see examples below). No defaults
+    - `:base`: the base DN to use for search. No default. Mandatory to load schema
+    - `:load_schema`: `boolean()` that indicates whether the LDAP schema should be loaded.
+    Defaults to `true`
     - `:bind_dn`: the DN to use to authenticate. If not set, the anonymous mode will be used
     instead
     - `:bind_password`: the password associated to the `:bind_dn`
@@ -103,7 +112,10 @@ defmodule LDAPoolex do
   """
   def start_link(pool_name, opts) do
     Supervisor.start_link(
-      [child_spec(pool_name, opts)],
+      [
+        child_spec(opts),
+        {LDAPoolex.SchemaLoader, opts}
+      ],
       [strategy: :one_for_one, name: Module.concat(__MODULE__, pool_name)]
     )
   end

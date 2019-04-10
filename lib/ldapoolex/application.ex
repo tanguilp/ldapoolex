@@ -5,8 +5,10 @@ defmodule LDAPoolex.Application do
 
   def start(_type, _args) do
     children =
-      for {pool_name, opts} <- Application.get_env(:ldapoolex, :pools, []) do
-        LDAPoolex.child_spec(pool_name, opts)
+      for {pool_name, args} <- Application.get_env(:ldapoolex, :pools, []) do
+        args = Keyword.put(args, :name, pool_name)
+
+        LDAPoolex.PoolSupervisor.child_spec(args)
       end
 
     opts = [strategy: :one_for_one, name: __MODULE__]
