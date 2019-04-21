@@ -12,7 +12,7 @@ Add the following line to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ldapoolex, github: "tanguilp/ldapoolex", tag: "0.1.0"}
+    {:ldapoolex, github: "tanguilp/ldapoolex", tag: "0.1.1"}
   ]
 end
 ```
@@ -49,16 +49,26 @@ files under the `:pools` key:
 use Mix.Config
 
 config :ldapoolex, pools: [
-  poule_un: [
-    ldap_args: [hosts: ['localhost']],
+  slapd1: [
+    ldap_args: [hosts: ['localhost'], base: 'dc=example,dc=org'],
     size: 5,
     max_overflow: 10
   ],
 
-  poule_do: [
-    ldap_args: [hosts: ['ldap-12.sfexm3.domain.local']],
+  slapd2: [
+    ldap_args: [hosts: ['localhost'], load_schema: false],
     size: 3,
     max_overflow: 5
+  ],
+
+  pool_apacheds: [
+    ldap_args: [
+      hosts: ['localhost'],
+      base: 'ou=People,dc=example,dc=com',
+      ldap_open_opts: [port: 10_389]
+    ],
+    size: 2,
+    overflow: 7
   ]
 ]
 ```
@@ -66,6 +76,11 @@ config :ldapoolex, pools: [
 ### Starting a supervised pool
 
 Call the `LDAPoolex.start_link/2` function.
+
+## Example:
+```elixir
+LDAPoolex.start_link(:slapd1, [ldap_args: [hosts: ['localhost'], base: 'dc=example,dc=org']])
+```
 
 ## Usage
 

@@ -109,13 +109,27 @@ defmodule LDAPoolex do
     milliseconds. Defaults to `3000`
     - `:ldap_open_opts`: will be passed as the second parameter of the `:eldap.open/2` function.
     Defaults to `[]`
+
+  ## Example:
+  ```elixir
+  LDAPoolex.start_link(:slapd1, [ldap_args: [hosts: ['localhost'], base: 'dc=example,dc=org']])
+  ```
   """
   def start_link(pool_name, opts) do
+    children =
+      if opts[:ldap_args][:load_schema] in [true, nil] do
+        [
+          child_spec(opts),
+          {LDAPoolex.Schema, opts}
+        ]
+      else
+        [
+          child_spec(opts)
+        ]
+      end
+
     Supervisor.start_link(
-      [
-        child_spec(opts),
-        {LDAPoolex.SchemaLoader, opts}
-      ],
+      children,
       [strategy: :one_for_one, name: Module.concat(__MODULE__, pool_name)]
     )
   end

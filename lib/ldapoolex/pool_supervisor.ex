@@ -15,7 +15,7 @@ defmodule LDAPoolex.PoolSupervisor do
   @impl true
   def init(args) do
     children =
-      if args[:load_schema] || true do
+      if args[:ldap_args][:load_schema] in [true, nil] do
         [
           LDAPoolex.child_spec(args),
           {LDAPoolex.Schema, args}
